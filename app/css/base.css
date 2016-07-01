@@ -1,0 +1,11 @@
+#video {
+  position: absolute;
+  top: -1000px;
+}
+
+#canvas {
+  width: 100%;
+  bottom: 0;
+  position: absolute;
+}
+
