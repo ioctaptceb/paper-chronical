@@ -1,88 +1,110 @@
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
+let found;
+let selected;
+let COLORTHRESHOLD = 190
+const isWhite = (r, g, b) => r > COLORTHRESHOLD && b > COLORTHRESHOLD  && g > COLORTHRESHOLD;
+const boundingBoxColor = '#f00'
+
+const comparePixel = (pixel, candidatePixel) => {
+  if (isWhite(candidatePixel.r, candidatePixel.g, candidatePixel.b, candidatePixel.a)
+      && !isWhite(pixel.r, pixel.g, pixel.b, pixel.a)) {
+    return true;
+  }
+  return false;
+}
+
+const remap = (pixels, width, bounds) => {
+  let array = [];
+
+  const mappedPixel = (s, j, i) => {
+    return {
+      r: pixels[s],
+      g: pixels[s + 1],
+      b: pixels[s + 2],
+      a: pixels[s + 3],
+      index: s,
+      x: j,
+      y: i
+    }
+  }
+
+  if (!selected) {
+    const horizontalCenter = canvas.width;
+    const verticalCenter = canvas.height;
+    const index = horizontalCenter * verticalCenter
+
+    context.strokeStyle = boundingBoxColor;
+    context.strokeRect(canvas.width / 2, canvas.height / 2, 50, 50);
+    context.fillStyle = "#000";
+    console.log(pixels[(index * 4) / 2], index);
+  }
+  for (let i = bounds.yT; i < bounds.yB; i += 2) {
+    for (let j = bounds.xL; j < bounds.xR; j += 2) {
+      const w = i * width * 4 + j * 4;
+      const pixel = mappedPixel(w, j, i);
+      const lastPixel = mappedPixel(w - 7, j, i);
+      const nextPixel = mappedPixel(w + 7, j, i);
+      const belowPixel = mappedPixel(w + (width * 4), j, i);
+      const abovePixel = mappedPixel(w - (width * 4), j, i);
+
+      if (comparePixel(pixel, nextPixel)) {
+        array.push(nextPixel);
+      }
+      if (comparePixel(pixel, belowPixel)) {
+        array.push(belowPixel);
+      }
+      if (comparePixel(pixel, lastPixel)) {
+        array.push(lastPixel);
+      }
+      if (comparePixel(pixel, abovePixel)) {
+        array.push(abovePixel);
+      }
+    }
+  }
+  return array;
+};
 
 const FastTracker = function() {
   FastTracker.base(this, 'constructor');
 };
+
 tracking.inherits(FastTracker, tracking.Tracker);
 
-let found;
 tracking.Fast.THRESHOLD = 10;
 FastTracker.prototype.threshold = tracking.Fast.THRESHOLD;
 
 FastTracker.prototype.track = function(pixels, width, height) {
-  const remap = (pixels, width, height) => {
-    let array = [];
-    for (let i = 0; i < height; i += 1) {
-      for (let j = 0; j < width; j += 1) {
-        const w = i * width * 4 + j * 4;
-        const colorObject = {
-          r: pixels[w],
-          g: pixels[w + 1],
-          b: pixels[w + 2],
-          a: pixels[w + 3],
-          index: w,
-          x: j,
-          y: i
-        };
-        array.push(colorObject);
-      }
-    }
-    return array;
-  };
-
-  const array = remap(pixels, width, height);
-
-  const simplifiedArray = array.filter((pixel) => {
-    if (pixel.r < 150 && pixel.b > 150 && notOutOfBounds(found, pixel.x, pixel.y)) {
-      return true;
-    }
-    return false
-  });
-
-  const cornerData = simplifiedArray.reduce((o, pixel) => {
-    const isMax = (coord) => !o.arr.filter((prevPoint) =>
-      prevPoint[coord] <= pixel[coord]).length;
-    const isMin = (coord) => !o.arr.filter((prevPoint) =>
-      prevPoint[coord] >= pixel[coord]).length;
-    if (isMin('x') || isMax('x') || isMin('y') || isMax('y')) {
-      o.arr.push({x: pixel.x, y:pixel.y});
-    }
-    if (o.lastPixel && o.lastPixel.x > pixel.x && o.lastPixel.y < pixel.y ||
-        o.lastPixel && o.lastPixel.x < pixel.x && o.lastPixel.y > pixel.y ) {
-      o.arr.push({x: o.lastPixel.x, y: o.lastPixel.y});
-    }
-    o.lastPixel = pixel
-    return o;
-  }, {arr: []});
-
-  const fullColorData = simplifiedArray.reduce((a, pixel) => {
-    return a.concat([pixel.x, pixel.y]);
-  }, []);
-
-  this.emit('track', {
-    data: cornerData.arr,
-  });
+  if (found) {
+    const array = remap(pixels, width, found);
+    this.emit('track', {
+      data: array
+    });
+  }
 };
 
-const colorTracker = new tracking.ColorTracker('cyan');
-const tracker = new FastTracker();
-
-function notOutOfBounds(bounds, cornerX, cornerY) {
-  if (!bounds) return false;
-  const isContainedX = bounds.xL < cornerX && cornerX < bounds.xR;
-  const isContainedY = bounds.yT < cornerY && cornerY< bounds.yB;
-  if (isContainedX && isContainedY) {
+tracking.ColorTracker.registerColor('white', (r, g, b) => {
+  if (isWhite(r, g, b)) {
     return true;
   }
-  return false
-}
-colorTracker.on('track', function(event) {
-  event.data.forEach(function(rect, anything, anythingelse) {
-    if (rect.color === 'custom') {
-      rect.color = tracker.customColor;
-    }
+  return false;
+});
 
+tracking.ColorTracker.minDimension = 80;
+const colorTracker = new tracking.ColorTracker('white');
+const tracker = new FastTracker();
+
+const drawBoundaries = (width, height) => {
+  context.strokeStyle = '#fdd3c7';
+  const x = canvas.width / 2 - width / 2
+  const y = canvas.height / 2 - height / 2
+  context.strokeRect(x, y, width, height);
+}
+
+colorTracker.on('track', function(event) {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  drawBoundaries( 300, 400 );
+  event.data.forEach(function(rect) {
     found = {
       xL: rect.x - 50,
       xR: rect.x + rect.width + 50,
@@ -90,10 +112,10 @@ colorTracker.on('track', function(event) {
       yB: rect.y + rect.height + 50
     };
 
-    context.strokeStyle = rect.color;
+    context.strokeStyle = boundingBoxColor;
     context.strokeRect(rect.x, rect.y, rect.width, rect.height);
-    context.font = '11px Helvetica';
-    context.fillStyle = "#fff";
+    context.font = '6px Helvetica';
+    context.fillStyle = "#000";
     context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
     context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
   });
@@ -102,20 +124,13 @@ colorTracker.on('track', function(event) {
 tracking.track('#video', colorTracker, { camera: true });
 
 tracker.on('track', function(event) {
-  context.clearRect(0, 0, canvas.width, canvas.height);
   const corners = event.data;
   corners.forEach((corner) => {
     context.fillStyle = '#000';
-    context.fillRect(corner.x, corner.y, 2, 2);
+    context.fillRect(corner.x, corner.y, 1, 1);
   });
 });
 
 tracking.track('#video', tracker, { camera: true });
 
-
-// GUI Controllers
-
-gui.add(tracker, 'threshold', 1, 100).onChange(function(value) {
-  tracking.Fast.THRESHOLD = value;
-});
 

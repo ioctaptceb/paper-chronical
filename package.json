@@ -4,7 +4,9 @@
   "description": "paperpaper",
   "main": "app.js",
   "scripts": {
-    "test": "jasmine"
+    "test": "jasmine",
+    "lint": "eslint .",
+    "start": "http-server app/"
   },
   "repository": {
     "type": "git",
@@ -21,17 +23,9 @@
   },
   "homepage": "https://github.com/ioctaptceb/paper-chronical",
   "devDependencies": {
-    "babelify": "^7.3.0",
-    "browser-sync": "^2.13.0",
-    "browserify": "^13.0.1",
     "eslint": "^2.13.1",
-    "eslint-config-bitcrowd": "0.0.3",
     "eslint-plugin-import": "^1.9.2",
-    "eslint-plugin-react": "^5.2.2",
-    "gulp": "^3.9.1",
-    "gulp-postcss": "^6.1.1",
-    "gulp-sass": "^2.3.2",
-    "gulp-useref": "^3.1.0"
+    "http-server": "^0.9.0"
   },
   "dependencies": {
     "least-squares": "0.0.2",

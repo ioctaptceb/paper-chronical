@@ -4,8 +4,12 @@
 }
 
 #canvas {
-  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
   bottom: 0;
   position: absolute;
+  transform: rotateY(180deg);
+  -webkit-transform:rotateY(180deg); /* Safari and Chrome */
+  -moz-transform:rotateY(180deg); /* Firefox */
 }
 
