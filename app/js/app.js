@@ -2,9 +2,9 @@ const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 let found;
 let selected;
-let COLORTHRESHOLD = 190
+let COLORTHRESHOLD = 190;
 const isWhite = (r, g, b) => r > COLORTHRESHOLD && b > COLORTHRESHOLD  && g > COLORTHRESHOLD;
-const boundingBoxColor = '#f00'
+const boundingBoxColor = '#f00';
 
 const comparePixel = (pixel, candidatePixel) => {
   if (isWhite(candidatePixel.r, candidatePixel.g, candidatePixel.b, candidatePixel.a)
@@ -12,7 +12,7 @@ const comparePixel = (pixel, candidatePixel) => {
     return true;
   }
   return false;
-}
+};
 
 const remap = (pixels, width, bounds) => {
   let array = [];
@@ -26,19 +26,19 @@ const remap = (pixels, width, bounds) => {
       index: s,
       x: j,
       y: i
-    }
-  }
+    };
+  };
 
   if (!selected) {
-    const horizontalCenter = canvas.width;
-    const verticalCenter = canvas.height;
-    const index = horizontalCenter * verticalCenter
+    // const horizontalCenter = canvas.width;
+    // const verticalCenter = canvas.height;
+    // const index = horizontalCenter * verticalCenter;
 
     context.strokeStyle = boundingBoxColor;
     context.strokeRect(canvas.width / 2, canvas.height / 2, 50, 50);
-    context.fillStyle = "#000";
-    console.log(pixels[(index * 4) / 2], index);
+    context.fillStyle = '#000';
   }
+
   for (let i = bounds.yT; i < bounds.yB; i += 2) {
     for (let j = bounds.xL; j < bounds.xR; j += 2) {
       const w = i * width * 4 + j * 4;
@@ -115,7 +115,7 @@ colorTracker.on('track', function(event) {
     context.strokeStyle = boundingBoxColor;
     context.strokeRect(rect.x, rect.y, rect.width, rect.height);
     context.font = '6px Helvetica';
-    context.fillStyle = "#000";
+    context.fillStyle = '#000';
     context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
     context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
   });
